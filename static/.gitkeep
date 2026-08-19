@@ -1,0 +1,1 @@
+# Keep this directory so Django can find it if static files are placed here.
