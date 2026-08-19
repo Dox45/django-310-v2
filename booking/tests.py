@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 from datetime import date, time, datetime, timedelta
 import json
 
@@ -26,9 +27,14 @@ class SpaceBookingTestCase(TestCase):
             price_unit='hour', min_duration=1, max_duration=4, capacity=20
         )
 
+        # Create user
+        self.user = User.objects.create_user(
+            username='johndoe', email='john@example.com', password='password123',
+            first_name='John', last_name='Doe'
+        )
         # Create customer
         self.customer = Customer.objects.create(
-            name='John Doe', email='john@example.com', phone='+2348011111111'
+            user=self.user, name='John Doe', email='john@example.com', phone='+2348011111111'
         )
 
         self.client = Client()
@@ -170,14 +176,15 @@ class SpaceBookingTestCase(TestCase):
         self.assertIn("fully booked", data2['message'])
 
     def test_create_booking_api(self):
+        # Authenticate first
+        self.client.login(username='johndoe', password='password123')
+        
         url = reverse('create_booking')
         payload = {
             'space_type': 'meeting_room_a',
             'date': '2026-08-19',
             'start_time': '10:00',
             'duration': '2',
-            'name': 'Jane Doe',
-            'email': 'jane@example.com',
             'phone': '+2348022222222'
         }
         
@@ -191,8 +198,30 @@ class SpaceBookingTestCase(TestCase):
         data = json.loads(response.content)
         self.assertTrue(data['success'])
         self.assertEqual(data['details']['space_name'], 'Room A')
-        self.assertEqual(data['details']['customer_name'], 'Jane Doe')
+        self.assertEqual(data['details']['customer_name'], 'John Doe')
+        self.assertEqual(data['details']['customer_email'], 'john@example.com')
         
         # Verify Booking created in DB
-        self.assertTrue(Booking.objects.filter(customer__email='jane@example.com', space=self.room_a).exists())
+        self.assertTrue(Booking.objects.filter(customer__user=self.user, space=self.room_a).exists())
+
+    def test_create_booking_api_unauthenticated(self):
+        url = reverse('create_booking')
+        payload = {
+            'space_type': 'meeting_room_a',
+            'date': '2026-08-19',
+            'start_time': '10:00',
+            'duration': '2',
+            'phone': '+2348022222222'
+        }
+        
+        response = self.client.post(
+            url,
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        
+        self.assertEqual(response.status_code, 401)
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn("must be logged in", data['message'])
 

@@ -1,8 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from django.db.models import Q
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from datetime import datetime, time, date, timedelta
 import json
 
@@ -186,11 +188,100 @@ def check_availability_api(request):
     })
 
 
+def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+        
+    error = None
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        phone = request.POST.get('phone', '').strip()
+        password = request.POST.get('password', '')
+        
+        if not username or not email or not password or not first_name:
+            error = "Please fill in all required fields."
+        elif User.objects.filter(username=username).exists():
+            error = "Username is already taken."
+        elif User.objects.filter(email=email).exists():
+            error = "An account with this email already exists."
+        else:
+            try:
+                with transaction.atomic():
+                    # Create User
+                    user = User.objects.create_user(
+                        username=username,
+                        email=email,
+                        password=password,
+                        first_name=first_name,
+                        last_name=last_name
+                    )
+                    # Create corresponding Customer profile
+                    Customer.objects.create(
+                        user=user,
+                        name=f"{first_name} {last_name}".strip(),
+                        email=email,
+                        phone=phone
+                    )
+                    # Log in the user
+                    login(request, user)
+                    return redirect('index')
+            except Exception as e:
+                error = f"Registration failed: {str(e)}"
+                
+    return render(request, 'booking/signup.html', {'error': error})
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+        
+    error = None
+    next_url = request.GET.get('next', 'index')
+    
+    if request.method == 'POST':
+        username_or_email = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        next_url = request.POST.get('next', 'index')
+        
+        if not username_or_email or not password:
+            error = "Please enter both username/email and password."
+        else:
+            username = username_or_email
+            if '@' in username_or_email:
+                try:
+                    user_obj = User.objects.get(email__iexact=username_or_email)
+                    username = user_obj.username
+                except User.DoesNotExist:
+                    pass
+            
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                if next_url and next_url != 'index':
+                    return redirect(next_url)
+                return redirect('index')
+            else:
+                error = "Invalid username/email or password."
+                
+    return render(request, 'booking/login.html', {'error': error, 'next': next_url})
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('index')
+
+
 @csrf_exempt
 @transaction.atomic
 def create_booking_api(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Only POST requests allowed.'}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'message': 'You must be logged in to book a space.'}, status=401)
 
     try:
         data = json.loads(request.body)
@@ -201,12 +292,10 @@ def create_booking_api(request):
     date_str = data.get('date')
     start_time_str = data.get('start_time')
     duration_str = data.get('duration')
-    name = data.get('name')
-    email = data.get('email')
     phone = data.get('phone', '')
 
-    if not space_type or not date_str or not name or not email:
-        return JsonResponse({'success': False, 'message': 'Missing required fields (space_type, date, name, email).'}, status=400)
+    if not space_type or not date_str:
+        return JsonResponse({'success': False, 'message': 'Missing required fields (space_type, date).'}, status=400)
 
     try:
         booking_date = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -246,14 +335,20 @@ def create_booking_api(request):
         if not available:
             return JsonResponse({'success': False, 'message': error_msg}, status=400)
 
-    # Create or retrieve customer
+    # Get or create customer linked to the logged-in user
+    user = request.user
     customer, created = Customer.objects.get_or_create(
-        email=email.lower().strip(),
-        defaults={'name': name.strip(), 'phone': phone.strip()}
+        user=user,
+        defaults={
+            'name': f"{user.first_name} {user.last_name}".strip() or user.username,
+            'email': user.email,
+            'phone': phone.strip()
+        }
     )
-    if not created and name.strip():
-        # Update name if changed
-        customer.name = name.strip()
+    if not created:
+        # Update name/email if they changed on user profile, and phone if a new phone is provided
+        customer.name = f"{user.first_name} {user.last_name}".strip() or user.username
+        customer.email = user.email
         if phone.strip():
             customer.phone = phone.strip()
         customer.save()

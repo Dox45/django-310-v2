@@ -1,0 +1,151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — Impact Hub Lagos</title>
+    <meta name="description" content="Sign in to your Impact Hub Lagos space booking account.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'booking/css/styles.css' %}">
+    <style>
+        .auth-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 140px);
+            padding: 2rem 1rem;
+        }
+        .auth-card {
+            width: 100%;
+            max-width: 450px;
+            padding: 2.5rem;
+        }
+        .auth-links {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--dark-light);
+        }
+        .auth-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-links a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+        .error-banner {
+            background-color: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            color: #dc2626;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Gradients -->
+    <div class="bg-gradient-circle bg-circle-1"></div>
+    <div class="bg-gradient-circle bg-circle-2"></div>
+
+    <!-- Navigation Header -->
+    <header class="navbar">
+        <div class="navbar-container">
+            <a href="{% url 'index' %}" class="brand">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="8" />
+                        <path d="M50 20V80" stroke="currentColor" stroke-width="8" stroke-linecap="round" />
+                        <path d="M20 50H80" stroke="currentColor" stroke-width="8" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">impact hub</span>
+                    <span class="brand-subtitle">Lagos</span>
+                </div>
+            </a>
+            <nav class="nav-links" id="navLinks">
+                <a href="{% url 'index' %}" class="nav-link">Home</a>
+                <a href="{% url 'signup' %}" class="nav-link admin-btn">Sign Up</a>
+            </nav>
+            <button class="nav-toggle" aria-label="Toggle navigation" id="navToggle" aria-expanded="false">
+                <span class="hamburger-bar"></span>
+                <span class="hamburger-bar"></span>
+                <span class="hamburger-bar"></span>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="auth-section">
+            <div class="glassmorphic-card auth-card">
+                <h1 class="booking-form-title" style="text-align: center; margin-bottom: 0.5rem;">Welcome Back</h1>
+                <p class="booking-form-subtitle" style="text-align: center; margin-bottom: 2rem;">Sign in to book space and manage reservations</p>
+
+                {% if error %}
+                <div class="error-banner">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username or Email</label>
+                        <input type="text" name="username" id="username" class="form-control" placeholder="Enter your username or email" required autocomplete="username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" name="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Sign In</button>
+                </form>
+
+                <div class="auth-links">
+                    Don't have an account? <a href="{% url 'signup' %}{% if next %}?next={{ next }}{% endif %}">Sign Up</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 Impact Hub Lagos. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Custom JS for mobile navbar toggle -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navToggle = document.getElementById('navToggle');
+            const navLinks = document.getElementById('navLinks');
+            
+            if (navToggle && navLinks) {
+                navToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = navToggle.classList.toggle('active');
+                    navLinks.classList.toggle('active');
+                    navToggle.setAttribute('aria-expanded', isOpen);
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
