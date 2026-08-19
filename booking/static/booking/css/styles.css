@@ -168,6 +168,44 @@ body {
     box-shadow: 0 4px 12px rgba(0, 102, 67, 0.15);
 }
 
+/* Mobile Toggle */
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 26px;
+    height: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 101;
+}
+
+.nav-toggle:focus {
+    outline: none;
+}
+
+.hamburger-bar {
+    width: 100%;
+    height: 3px;
+    background-color: var(--primary);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.nav-toggle.active .hamburger-bar:nth-child(1) {
+    transform: translateY(7.5px) rotate(45deg);
+}
+
+.nav-toggle.active .hamburger-bar:nth-child(2) {
+    opacity: 0;
+}
+
+.nav-toggle.active .hamburger-bar:nth-child(3) {
+    transform: translateY(-7.5px) rotate(-45deg);
+}
+
 /* Main */
 .main-content {
     flex: 1;
@@ -848,20 +886,48 @@ body {
 /* Responsive adjustment */
 @media (max-width: 768px) {
     .navbar-container {
-        padding: 0 1rem;
+        padding: 0 1.5rem;
+    }
+    
+    .nav-toggle {
+        display: flex;
     }
     
     .nav-links {
-        gap: 0.75rem;
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.5rem 2rem;
+        gap: 0.5rem;
+        z-index: 99;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        animation: slideDown 0.3s ease forwards;
+    }
+    
+    .nav-links.active {
+        display: flex;
     }
     
     .nav-link {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.5rem;
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+        width: 100%;
+        text-align: center;
+        border-radius: 8px;
     }
     
     .nav-link.admin-btn {
-        padding: 0.4rem 0.75rem;
+        padding: 0.75rem 1.5rem;
+        margin-top: 0.5rem;
+        border-radius: 30px;
+        display: inline-block;
     }
     
     .main-content {

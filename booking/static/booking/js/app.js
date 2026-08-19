@@ -302,3 +302,37 @@ function openSuccessModal() {
 function closeSuccessModal() {
     successModal.classList.remove('open');
 }
+
+// Mobile Navbar Toggle
+document.addEventListener('DOMContentLoaded', () => {
+    const navToggle = document.getElementById('navToggle');
+    const navLinks = document.getElementById('navLinks');
+    
+    if (navToggle && navLinks) {
+        navToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = navToggle.classList.toggle('active');
+            navLinks.classList.toggle('active');
+            navToggle.setAttribute('aria-expanded', isOpen);
+        });
+
+        // Close menu when clicking on any nav link
+        const links = navLinks.querySelectorAll('.nav-link');
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                navToggle.classList.remove('active');
+                navLinks.classList.remove('active');
+                navToggle.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        // Close menu when clicking anywhere outside of the navbar
+        document.addEventListener('click', (e) => {
+            if (navLinks.classList.contains('active') && !navToggle.contains(e.target) && !navLinks.contains(e.target)) {
+                navToggle.classList.remove('active');
+                navLinks.classList.remove('active');
+                navToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+});
